@@ -1,6 +1,8 @@
-use dbus::{arg, blocking::Connection};
+use dbus::{arg, blocking::Connection, Error};
 use std::collections::HashMap;
 use std::time::Duration;
+
+use std::process;
 
 fn ret_refarg(value: &dyn arg::RefArg) -> &str {
     let mut ret = "Unknown";
@@ -22,7 +24,8 @@ fn ret_refarg(value: &dyn arg::RefArg) -> &str {
     ret
 }
 
-pub fn get_cmus(artist: &mut String, title: &mut String) {
+pub fn get_cmus(artist: &mut String, title: &mut String) -> Result<(), ()> {
+    let metadata: HashMap<String, arg::Variant<Box<dyn arg::RefArg>>>;
     let conn = Connection::new_session().unwrap();
     let proxy = conn.with_proxy(
         "org.mpris.MediaPlayer2.cmus",
@@ -30,15 +33,26 @@ pub fn get_cmus(artist: &mut String, title: &mut String) {
         Duration::from_millis(5000),
     );
     use dbus::blocking::stdintf::org_freedesktop_dbus::Properties;
-    let a: HashMap<String, arg::Variant<Box<dyn arg::RefArg>>> = proxy
-        .get("org.mpris.MediaPlayer2.Player", "Metadata")
-        .unwrap();
-    for (k, v) in a {
+    match proxy.get::<HashMap<String,arg::Variant<Box<dyn arg::RefArg>>>>(
+        "org.mpris.MediaPlayer2.Player", "Metadata") {
+        Ok(data) => {
+            metadata = data;
+        }
+        Err(error) => {
+            return Err(())
+        }
+    }
+    if metadata.is_empty() {
+        println!("metadata is empty");
+        return Err(());
+    }
+    for (k, v) in metadata {
         if k == "xesam:artist" {
             *artist = ret_refarg(&v).to_string();
         }
-        if k == "xesam:title" {
+        else if k == "xesam:title" {
             *title = ret_refarg(&v).to_string();
         }
     }
+    Ok(())
 }

@@ -40,7 +40,10 @@ fn main() {
 
         let mut artist = String::new();
         let mut title = String::new();
-        get_cmus(&mut artist, &mut title);
+        if let Err(_e) = get_cmus(&mut artist, &mut title) {
+            print_line(message);
+            continue;
+        }
 
         let m = BarMessage {
             name: "test",
