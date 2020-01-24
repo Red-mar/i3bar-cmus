@@ -43,7 +43,6 @@ pub fn get_cmus(artist: &mut String, title: &mut String) -> Result<(), ()> {
         }
     }
     if metadata.is_empty() {
-        println!("metadata is empty");
         return Err(());
     }
     for (k, v) in metadata {
